@@ -5,8 +5,14 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
+)
+
+var (
+	// Teletoken bot
+	Teletoken = os.Getenv("TELE_TOKEN")
 )
 
 var appVersion = "Version"
