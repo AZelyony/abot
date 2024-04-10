@@ -6,10 +6,16 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/telebot.v3"
+)
+
+var (
+	// Teletoken bot
+	Teletoken = os.Getenv("TELE_TOKEN")
 )
 
 // abotCmd represents the abot command
