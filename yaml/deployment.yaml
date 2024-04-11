@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: abot
-        image: azelyony/abot:1.0.4
+        image: azelyony/abot:v1.0.4
         ports:
         - containerPort: 9443
         envFrom:
