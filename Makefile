@@ -3,7 +3,7 @@ APP=$(shell basename $(shell git remote get-url origin))
 #REGISTRY=azelyony
 REGISTRY=ghcr.io/azelyony
 VERSION=$(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
-TARGETOS=linux #darwin windows
+TARGETOS=linux#darwin windows
 TARGETARCH=amd64 # arm64
 
 #Use "make build TARGETOS=windows TARGETARCH=amd64"
