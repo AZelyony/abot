@@ -5,7 +5,9 @@
 replicaCount: 1
 image:
   repository: ghcr.io/azelyony
+  pullPolicy: IfNotPresent
   tag: "v1.0.6-b52e36a"
+  os: linux
   arch: amd64
 secret:
   name: "abot"
