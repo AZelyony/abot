@@ -26,12 +26,12 @@ build: format get
 
 image:
 #	docker build . -t ${REGISTRY}/${APP}:${VERSION}-${TARGETARCH}
-	docker build . -t ${REGISTRY}/${APP}:${VERSION}-${TARGETARCH}  --build-arg TARGETARCH=${TARGETARCH}
+	docker build . -t ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-${TARGETARCH}  --build-arg TARGETARCH=${TARGETARCH} --build-arg TARGETOS=${TARGETOS}
 
 push:
-	docker push ${REGISTRY}/${APP}:${VERSION}-${TARGETARCH}
+	docker push ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-${TARGETARCH}
 
 clean: 
 	rm -rf abot
-	#за умовами завдання виконуємо docker rmi <IMAGE_TAG> 
-	docker rmi ${REGISTRY}/${APP}:${VERSION}-${TARGETARCH}
+	#delete image 
+	docker rmi ${REGISTRY}/${APP}:${VERSION}-${TARGETOS}-${TARGETARCH}
