@@ -3,17 +3,13 @@
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
-
 image:
   repository: azelyony
-  tag: "v1.0.4-b39a956"
+  tag: "v1.0.5-3d8c635"
   arch: amd64
-
 secret:
   name: "abot"
   env: "TELE_TOKEN"
   key: "token"
-
 securityContext:
   privileged: true
-
