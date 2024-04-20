@@ -1,7 +1,7 @@
 APP=$(shell basename $(shell git remote get-url origin))
 #REGISTRY=gcr.io/azelyony
 #REGISTRY=azelyony
-REGISTRY=ghcr.io/abot-16207
+REGISTRY=ghcr.io/azelyony
 VERSION=$(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
 TARGETOS=linux #darwin windows
 TARGETARCH=amd64 # arm64
