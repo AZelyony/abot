@@ -25,6 +25,7 @@ jobs:
         run: make image push
   cd:
     name: CD
+    needs: ci
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
