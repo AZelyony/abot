@@ -9,6 +9,9 @@
 *.so
 *.dylib
 
+yaml/secret-env.yaml
+yaml/secret.yaml
+
 #config files
 vars.tfvars
 .terraform/
