@@ -45,6 +45,7 @@ module "gke_auth" {
 }
 
 data "google_client_config" "current" {}
+#modules.tf-google-gke-cluster.local_file.kubeconfig
 
 data "google_container_cluster" "main" {
   name     = google_container_cluster.this.name
