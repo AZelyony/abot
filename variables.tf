@@ -16,7 +16,7 @@ variable "GOOGLE_BUCKET" {
 
 variable "GKE_NUM_NODES" {
   type        = number
-  default     = 2
+  default     = 1
   description = "GKE nodes number"
 }
 

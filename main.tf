@@ -7,11 +7,10 @@ module "gke_cluster" {
 
 terraform {
   backend "gcs" {
-    bucket = var.GOOGLE_BUCKET
+    bucket = "az_secret" # var.GOOGLE_BUCKET
     prefix = "terraform/state"
   }
 }
-
 
 module "github_repository" {
   source                   = "github.com/den-vasyliev/tf-github-repository"
@@ -32,6 +31,6 @@ module "flux_bootstrap" {
   source            = "github.com/den-vasyliev/tf-fluxcd-flux-bootstrap"
   github_repository = "${var.GITHUB_OWNER}/${var.FLUX_GITHUB_REPO}"
   private_key       = module.tls_private_key.private_key_pem
-  config_path = module.gke_cluster.kubeconfig
+  config_path       = module.gke_cluster.kubeconfig
   github_token      = var.GITHUB_TOKEN
 }
