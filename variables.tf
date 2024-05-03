@@ -9,10 +9,10 @@ variable "GOOGLE_REGION" {
   description = "GCP region to use"
 }
 
-variable "GOOGLE_BUCKET" {
-  type        = string
-  description = "GCS bucket name"
-}
+#variable "GOOGLE_BUCKET" {
+#  type        = string
+#  description = "GCS bucket name"
+#}
 
 variable "GKE_NUM_NODES" {
   type        = number
