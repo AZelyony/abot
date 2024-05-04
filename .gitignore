@@ -14,6 +14,7 @@ yaml/secret.yaml
 
 #config files
 vars.tfvars
+kind-cluster-config
 .terraform/
 *.tfstate
 .terraform.lock.hcl
