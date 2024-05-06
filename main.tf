@@ -36,3 +36,13 @@ module "flux_bootstrap" {
   #config_path      = module.gke_cluster.kubeconfig
   github_token = var.GITHUB_TOKEN
 }
+
+#module "flux_bootstrap" {
+#  source            = "./modules/flux_bootstrap"
+#  github_repository = "${var.GITHUB_OWNER}/${var.FLUX_GITHUB_REPO}"
+#  private_key       = module.tls_private_key.private_key_pem
+#  config_host       = module.gke_cluster.config_host
+#  config_token      = module.gke_cluster.config_token
+#  config_ca         = module.gke_cluster.config_ca
+#  github_token      = var.GITHUB_TOKEN
+#}
