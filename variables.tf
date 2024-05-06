@@ -16,7 +16,7 @@ variable "GOOGLE_REGION" {
 
 variable "GKE_NUM_NODES" {
   type        = number
-  default     = 1
+  default     = 2
   description = "GKE nodes number"
 }
 
@@ -36,8 +36,8 @@ variable "FLUX_GITHUB_REPO" {
   description = "Flux GitOps repository"
 }
 
-variable "FLUX_GITHUB_TARGET_PATH" {
-  type        = string
-  default     = "clusters"
-  description = "Flux manifests subdirectory"
-}
+#variable "FLUX_GITHUB_TARGET_PATH" {
+#  type        = string
+#  default     = "clusters"
+#  description = "Flux manifests subdirectory"
+#}
