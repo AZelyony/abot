@@ -1,0 +1,98 @@
+variables:
+  REGISTRY: 'docker.io/azelyony'
+  APP: 'abot'
+#  OS: 'linux'
+
+  OS:
+    value: "linux"
+    options:
+      - "linux"
+      - "apple"
+      - "windows"
+    description: "The OS target. Set to 'linux' by default."
+
+#  ARCH: 'amd64'
+  ARCH:
+    value: "amd64"
+    options:
+      - "amd64"
+      - "arm64"
+    description: "The ARCH target. Set to 'amd64' by default."
+
+  VARIABLES_FILE: ./variables.txt
+
+stages:
+  - test
+  - build
+  #- make_image
+  - deploy
+
+test:
+  stage: test
+  image: golang:latest
+  allow_failure: false
+  script:
+    - echo 'Testing started'
+    - gofmt -s -w ./
+    - go get
+    - go test -v
+
+build:
+  stage: build
+  image: golang:latest
+  script:
+    - echo "Building binary for platform $OS on $ARCH started"
+    - export VERSION=$(git describe --tags --abbrev=0)-$(git rev-parse --short HEAD)
+    - echo $VERSION
+    - echo "export VERSION=$VERSION" >> $VARIABLES_FILE
+    - CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCH go build -v -o abot -ldflags "-X=gitlab.com/azelyony1/abot/cmd.appVersion=$VERSION"
+  artifacts:
+    paths:
+      - abot
+      - $VARIABLES_FILE
+
+#make_image:
+#  stage: make_image
+#  image: docker:dind
+#  allow_failure: false
+#  script:
+#    - source $VARIABLES_FILE
+#    - unset DOCKER_HOST
+  #  - docker login docker.io/$REGISTRY -u $CI_REGISTRY_USER --password-stdin <<<$CI_REGISTRY_PASSWORD
+#    - echo "$CI_REGISTRY_PASSWORD" | docker login docker.io/$REGISTRY -u $CI_REGISTRY_USER --password-stdin
+
+#    - echo "Building image for platform $OS on $ARCH started"
+#    - echo $VERSION
+#    - docker build . -t $REGISTRY/$APP:$VERSION-$OS-$ARCH  --build-arg TARGETARCH=$ARCH --build-arg TARGETOS=$OS
+
+push_image:
+  stage: deploy
+#ToDo
+#  parallel:
+#    matrix:
+#      - ARCH: amd64
+#      - ARCH: arm64
+#  tags:
+    # run each build on a suitable, preconfigured runner (must match the target architecture)
+#    - runner-${ARCH}
+
+
+  image: 
+    name: gcr.io/kaniko-project/executor:v1.14.0-debug
+    entrypoint: [ "" ]
+
+#  before_script:
+#    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY 
+  script:
+    - source $VARIABLES_FILE
+    - echo "Pushing image for platform $OS on $ARCH started"
+    - mkdir -p /kaniko/.docker
+
+#    - echo "{\"auths\":{\"${REGISTRY}\":{\"auth\":\"$(echo -n $CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD | base64)\"}}}"
+    #- echo -n "{\"auths\":{\"${REGISTRY}\":{\"auth\":\"$(echo -n $CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD | base64)\"}}}" > /kaniko/.docker/config.json
+    - echo -n "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" > /kaniko/.docker/config.json
+    - echo $REGISTRY
+
+    - /kaniko/executor --context "$CI_PROJECT_DIR" --dockerfile "$CI_PROJECT_DIR/Dockerfile" --destination "$REGISTRY/$APP:$VERSION-$OS-$ARCH" --build-arg="TARGETOS=$OS" --build-arg="TARGETARCH=$ARCH"
+#    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --no-push
+#    - docker push ${REGISTRY}/${APP}:${VERSION}-$OS-$ARCH
