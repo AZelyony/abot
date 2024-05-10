@@ -7,8 +7,6 @@ install_gitleaks_linux() {
     echo $GITLEAKS_VERSION
     wget --no-verbose https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz -O - | tar -zxvf - gitleaks
     sudo mv gitleaks /usr/local/bin/
-#gitleaks_8.18.2_linux_x64.tar.gz
-
 }
 
 # Функція для встановлення gitleaks на macOS
