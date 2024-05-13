@@ -21,7 +21,7 @@ test:
 
 build: format get
 #	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${shell dpkg --print-architecture} go build -v -o abot -ldflags "-X="github.com/azelyony/abot/cmd.appVersion=${VERSION}
-	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -v -o abot -ldflags "-X="github.com/azelyony/abot/cmd.appVersion=${VERSION}
+	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -v -o abot -ldflags "-X=github.com/AZelyony/abot/cmd.appVersion=${VERSION}"
 
 image:
 #	docker build . -t ${REGISTRY}/${APP}:${VERSION}-${TARGETARCH}
