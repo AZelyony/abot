@@ -53,7 +53,9 @@ module "gke-workload-identity" {
 }
 
 module "kms" {
-  source             = "github.com/den-vasyliev/terraform-google-kms"
+#  source             = "github.com/den-vasyliev/terraform-google-kms"
+  source             = "terraform-google-modules/kms/google"
+  version            = "2.3.0"
   project_id         = var.GOOGLE_PROJECT
   keyring            = "sops-flux"
   location           = "global"

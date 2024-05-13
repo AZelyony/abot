@@ -40,3 +40,43 @@ jobs:
         git config user.email github-actions@github.com
         git commit -am "update version @VERSION"
         git push
+
+
+#  cd:
+#    name: CD
+#    needs: ci
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#        with:
+#          fetch-depth: 0
+#      - run: echo "VERSION=$(git describe --tags --abbrev=0 --always)-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+#      - uses: mikefarah/yq@master
+#        with:
+#          cmd: yq -i '.image.tag=strenv(VERSION)' helm/values.yaml
+#      - name: Download and install sops
+#        run: |
+#          curl -Lo /usr/local/bin/sops https://github.com/getsops/sops/releases/download/v3.8.1/sops-v3.8.1.linux.amd64
+#          chmod +x /usr/local/bin/sops
+#      - name: Create secret
+#        run: kubectl create secret generic abot --from-literal=token=${{ secrets.TELE_TOKEN }} --dry-run=client -o yaml > secret.yaml
+#      - name: Encrypt secret
+#        run: sops -e -gcp-kms projects/terraformtest-421712/locations/global/keyRings/sops-flux/cryptoKeys/sops-key-flux --encrypted-regex '^(token)$' secret.yaml > secret-enc.yaml
+#      - name: Copy secret-enc.yaml to another repository
+#        run: cp secret-enc.yaml ../flux-gitops/clusters/demo
+#      - name: Commit and push to another repository
+#        run: |
+#          cd ../flux-gitops
+#          git config user.name github-actions
+#          git config user.email github-actions@github.com
+#          git add secret-enc.yaml
+#          git add clusters/demo/secret-enc.yaml
+#          git commit -m "Add encrypted secret-enc.yaml"
+#          git push
+#      - name: Commit and push changes
+#        run: |
+#          git config user.name github-actions
+#          git config user.email github-actions@github.com
+#          git commit -am "update version @VERSION"
+#          git push
+

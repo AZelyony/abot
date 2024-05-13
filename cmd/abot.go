@@ -39,6 +39,7 @@ to quickly create a Cobra application.`,
 
 		if err != nil {
 			log.Fatalf("Please check TELE_TOKEN env variable. %s", err)
+			return
 		}
 
 		abot.Handle(telebot.OnText, func(m telebot.Context) error {
