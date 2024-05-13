@@ -5,7 +5,7 @@
 replicaCount: 1
 image:
   repository: azelyony
-  tag: "git_hook-bede882"
+  tag: "git_hook-1652104"
   arch: amd64
 secret:
   name: "abot"
