@@ -6,7 +6,9 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -70,4 +72,21 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// abotCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+func handleRequests() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/liveness":
+			currentTeleToken := strings.TrimSpace(string(getTokenBytes()))
+			if currentTeleToken != Teletoken {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				fmt.Printf("TeleToken: %s", Teletoken)
+				fmt.Printf("currentTeleToken: %s", currentTeleToken)
+			} else {
+				w.WriteHeader(http.StatusOK)
+			}
+		default:
+			http.NotFound(w, r)
+		}
+	})
 }
