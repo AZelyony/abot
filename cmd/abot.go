@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -32,12 +31,24 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("abot %s started ", appVersion)
+
+		fmt.Println("Starting server on port 8080")
+		go func() {
+			if err := http.ListenAndServe(":8080", handleRequests()); err != nil {
+				log.Fatalf("Server failed to start: %v", err)
+			}
+		}()
+		fmt.Println("Started server on port 8080")
+
+		fmt.Printf("abot %s started\n", appVersion)
+
 		abot, err := telebot.NewBot(telebot.Settings{
 			URL:    "",
 			Token:  Teletoken,
 			Poller: &telebot.LongPoller{Timeout: 10 * time.Second},
 		})
+
+		fmt.Println("Bot created.")
 
 		if err != nil {
 			log.Fatalf("Please check TELE_TOKEN env variable. %s", err)
@@ -73,18 +84,18 @@ func init() {
 	// is called directly, e.g.:
 	// abotCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
+
 func handleRequests() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/liveness":
-			currentTeleToken := strings.TrimSpace(string(getTokenBytes()))
-			if currentTeleToken != Teletoken {
-				w.WriteHeader(http.StatusServiceUnavailable)
-				fmt.Printf("TeleToken: %s", Teletoken)
-				fmt.Printf("currentTeleToken: %s", currentTeleToken)
-			} else {
-				w.WriteHeader(http.StatusOK)
-			}
+			// Возвращаем текущее время в формате строки
+			currentTime := time.Now().Format(time.RFC3339)
+			// Пишем текущее время в тело ответа
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(currentTime))
+		case "/readyness":
+			w.WriteHeader(http.StatusOK)
 		default:
 			http.NotFound(w, r)
 		}
