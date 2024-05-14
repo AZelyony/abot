@@ -2,7 +2,7 @@ module github.com/AZelyony/abot
 
 go 1.21
 
-toolchain go1.22.3
+
 
 require (
 	github.com/hirosassa/zerodriver v0.1.4
