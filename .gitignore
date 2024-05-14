@@ -7,7 +7,10 @@
 *.dll
 *.tgz
 *.so
+*.o
+*.class
 *.dylib
+abot
 
 yaml/secret-env.yaml
 yaml/secret.yaml
@@ -35,3 +38,19 @@ terraform.tfstate.backup
 
 # Go workspace file
 go.work
+
+# Logs and databases #
+######################
+*.log
+*.sql
+*.sqlite
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
