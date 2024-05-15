@@ -37,8 +37,8 @@ variable "FLUX_GITHUB_REPO" {
   description = "Flux GitOps repository"
 }
 
-#variable "FLUX_GITHUB_TARGET_PATH" {
-#  type        = string
-#  default     = "clusters"
-#  description = "Flux manifests subdirectory"
-#}
+variable "FLUX_GITHUB_TARGET_PATH" {
+  type        = string
+  default     = "kind"
+  description = "Flux manifests subdirectory"
+}
