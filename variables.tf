@@ -39,6 +39,6 @@ variable "FLUX_GITHUB_REPO" {
 
 variable "FLUX_GITHUB_TARGET_PATH" {
   type        = string
-  default     = "kind"
+  default     = "kind/dev"
   description = "Flux manifests subdirectory"
 }

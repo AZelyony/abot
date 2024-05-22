@@ -8,7 +8,8 @@ terraform {
 # # Source: "https://github.com/den-vasyliev/tf-hashicorp-tls-keys"
 module "tls_private_key" {
   source    = "github.com/den-vasyliev/tf-hashicorp-tls-keys"
-  algorithm = "RSA"
+  #algorithm = "RSA"
+  algorithm = "ECDSA"
 }
 
 module "github_repository" {
@@ -30,7 +31,8 @@ module "github_repository" {
 #}
 
 module "kind_cluster" {
-  source = "github.com/den-vasyliev/tf-kind-cluster?ref=cert_auth"
+  #source = "github.com/den-vasyliev/tf-kind-cluster?ref=cert_auth"
+  source            = "./modules/tf-kind" 
 }
 
 #module "flux_bootstrap" {
@@ -43,7 +45,8 @@ module "kind_cluster" {
 #  github_token      = var.GITHUB_TOKEN
 #}
 module "flux_bootstrap" {
-  source            = "github.com/den-vasyliev/tf-fluxcd-flux-bootstrap?ref=kind_auth"
+  #source            = "github.com/den-vasyliev/tf-fluxcd-flux-bootstrap?ref=kind_auth"
+  source            = "./modules/flux-bootstrap"
   github_repository = "${var.GITHUB_OWNER}/${var.FLUX_GITHUB_REPO}"
   target_path       = var.FLUX_GITHUB_TARGET_PATH
   private_key       = module.tls_private_key.private_key_pem
