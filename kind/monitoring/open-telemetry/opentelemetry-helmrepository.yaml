@@ -1,0 +1,10 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: opentelemetry
+  namespace: monitoring
+spec:
+  interval: 1m0s
+  url: https://open-telemetry.github.io/opentelemetry-helm-charts
+  
