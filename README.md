@@ -983,3 +983,5 @@ EOF
 kubectl port-forward service/grafana 3000:80 -n monitoring 
 ```
 Codespace створює посилання, за яким можемо взаємодіяти з Grafana.
+
+![](./grafana.png)
