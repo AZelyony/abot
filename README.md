@@ -25,7 +25,7 @@ cd flux-gitops
 ```
 
 Створюємо такі директорії:
-
+```shell
 flux-gitops/kind/dev
 flux-gitops/kind/dev/abot
 flux-gitops/kind/dev/mon
@@ -35,7 +35,7 @@ flux-gitops/kind/monitoring/open-telemetry
 flux-gitops/kind/monitoring/grafana/grafana
 flux-gitops/kind/monitoring/grafana/loki
 flux-gitops/kind/sealed-secrets
-
+```
 Створюємо кастомізацію для догляду за директорією де будемо зберігати налаштування моніторінгового ПО
 
 ```shell
