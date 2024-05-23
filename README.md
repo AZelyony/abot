@@ -7,16 +7,22 @@
 Встановлюємо terraform, flux
 (розгортання виконувалось у KIND)
 
+```shell
 terraform init
 terraform validate
 terraform plan
 terraform apply
+```
 
 Коли буде розгорнуто репо, клонуємо
+```shell
 git clone <repo/flux-gitops>
+```
 
 Переходимо до директорії
+```shell
 cd flux-gitops
+```
 
 Створюємо такі директорії:
 
@@ -32,6 +38,7 @@ flux-gitops/kind/sealed-secrets
 
 Створюємо кастомізацію для догляду за директорією де будемо зберігати налаштування моніторінгового ПО
 
+```shell
 cat <<EOF > flux-gitops/kind/dev/mon/monitoring-infra.yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -46,27 +53,31 @@ spec:
     kind: GitRepository
     name: flux-system
 EOF
-
+```
 
 # Створимо namespace
+```shell
 kubectl create namespace monitoring \
 --dry-run=client \
 -o yaml > flux-gitops/kind/monitoring/monitoring-namespace.yaml
-
+```
 # Встановимо Certmanager
 
 HelmRepository
+```shell
 flux create source helm cert-manager \
 --url https://charts.jetstack.io \
 --namespace monitoring \
 --export > flux-gitops/kind/monitoring/cert-manager/cert-manager-helmrepository.yaml
-
+```
 HelmRelease
+```shell
 cat <<EOF > flux-gitops/kind/monitoring/cert-manager/values.yaml
 # values.yaml
 installCRDs: true
 EOF
-
+```
+```shell
 flux create helmrelease cert-manager \
 --namespace monitoring \
 --source HelmRepository/cert-manager.monitoring \
@@ -74,27 +85,27 @@ flux create helmrelease cert-manager \
 --chart-version 1.14.5 \
 --values ./flux-gitops/kind/monitoring/cert-manager/values.yaml \
 --export > flux-gitops/kind/monitoring/cert-manager/cert-manager-helmrelease.yaml
-
+```
 
 Збережемо зміни в репозиторії. Далі після додавання окремого інструменту.
-
+```shell
 git add .
 git commit -am "Add cert-manager"
 git push
-
+```
 Flux зробить реконсиляцію і можна побачити, що з'явився Namespace - Monitoring та встановлено Certmanager
 
 # Встановлення OpenTelemetry Operator 
 
 Створення HelmRepository для OpenTelemetry
-
+```shell
 flux create source helm opentelemetry \
   --url https://open-telemetry.github.io/opentelemetry-helm-charts \
   --namespace monitoring \
   --export > flux-gitops/kind/monitoring/open-telemetry/opentelemetry-helmrepository.yaml
-
+```
 Створення HelmRelease для OpenTelemetry
-
+```shell
 cat <<EOF > flux-gitops/kind/monitoring/open-telemetry/otel-operator-values.yaml
     manager:
       collectorImage:
@@ -103,15 +114,16 @@ cat <<EOF > flux-gitops/kind/monitoring/open-telemetry/otel-operator-values.yaml
     admissionWebhooks.certManager.autoGenerateCert.enabled: true
     manager.featureGates: operator.autoinstrumentation.go
 EOF
-
+```
+```shell
 flux create helmrelease opentelemetry-operator \
   --chart opentelemetry-operator \
   --source HelmRepository/opentelemetry.monitoring \
   --namespace monitoring \
   --values flux-gitops/kind/monitoring/open-telemetry/otel-operator-values.yaml \
   --export > flux-gitops/kind/monitoring/open-telemetry/opentelemetry-operator-helmrelease.yaml 
-
-
+```
+```shell
 cat <<EOF > flux-gitops/kind/monitoring/open-telemetry/open-telemetry-collector.yaml
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
@@ -157,7 +169,8 @@ spec:
           processors: [memory_limiter, batch]
           exporters: [logging, prometheus]
 EOF
-
+```
+```shell
 cat <<EOF > flux-gitops/kind/monitoring/open-telemetry/opentelemetry-collector-sidecar.yaml
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
@@ -203,25 +216,25 @@ spec:
           processors: [memory_limiter, batch]          
           exporters: [logging,prometheus]
 EOF
-
+```
 # Fluent Bit
 
 Створення HelmRepository для Fluent Bit
-
+```shell
 flux create source helm fluentbit \
   --url https://fluent.github.io/helm-charts \
   --namespace monitoring \
   --export > flux-gitops/kind/monitoring/fluentbit/fluentbit-helmrepository.yaml
-
+```
 Створення HelmRelease для Fluent Bit
-
+```shell
 flux create helmrelease fluentbit \
   --chart fluent-bit \
   --source HelmRepository/fluentbit.monitoring \
   --namespace monitoring \
   --export > flux-gitops/kind/monitoring/fluentbit/fluentbit-helmrelease.yaml
-
-
+```
+```shell
 cat <<EOF > flux-gitops/kind/monitoring/fluentbit/fluentbit-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -286,25 +299,26 @@ data:
         Log_response_payload True
         tls             off
 EOF
-
+```
 
 # Prometheus
 
 Створення HelmRepository для Prometheus
-
+```shell
 flux create source helm prometheus \
   --url https://prometheus-community.github.io/helm-charts \
   --namespace monitoring \
   --export > flux-gitops/kind/monitoring/prometheus/prometheus-helmrepository.yaml
-
+```
 Створення HelmRelease для Prometheus
-
+```shell
 flux create helmrelease prometheus \
   --chart prometheus \
   --source HelmRepository/prometheus.monitoring \
   --namespace monitoring \
   --export > flux-gitops/kind/monitoring/prometheus/prometheus-helmrelease.yaml
-
+```
+```shell
 cat <<EOF > flux-gitops/kind/monitoring/prometheus/prometheus-comfigmap.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -661,20 +675,20 @@ data:
           regex: "9093"
           action: keep
 EOF
-
+```
 
 # Grafana + Loki
 
 
 Створення HelmRepository для Grafana + Loki
-
+```shell
 flux create source helm grafana \
   --url https://grafana.github.io/helm-charts \
   --namespace monitoring \
   --export > flux-gitops/kind/monitoring/grafana/grafana-helmrepository.yaml
-
+```
 Створення HelmRelease для Loki
-
+```shell
 cat <<EOF > flux-gitops/kind/monitoring/grafana/loki/loki-helmrelease.yaml
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -720,9 +734,9 @@ spec:
       service:
         publishNotReadyAddresses: true
 EOF
-
+```
 Створюємо configmap для Loki
-
+```shell
 cat <<EOF > flux-gitops/kind/monitoring/grafana/loki/loki-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -797,9 +811,9 @@ data:
     prometheus-operator-crds:
       enabled: false
 EOF
-
+```
 # Створення HelmRelease для Grafana
-
+```shell
 cat <<EOF > flux-gitops/kind/monitoring/grafana/grafana/grafana-helmrelease.yaml
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -850,17 +864,17 @@ spec:
       GF_FEATURE_TOGGLES_ENABLE: traceqlEditor
       GF_SERVER_PORT: "3000"
 EOF
-
+```
 # Sealed Secrets
 
 Створення HelmRepository для Sealed Secrets
-
+```shell
 flux create source helm sealed-secrets \
   --url https://bitnami-labs.github.io/sealed-secrets \
   --export > clusters/kind/sealed-secrets/sealed-secrets-helmrepository.yaml
-
+```
 Створення HelmRelease для Sealed Secrets
-
+```shell
 flux create helmrelease sealed-secrets \
   --chart sealed-secrets \
   --source HelmRepository/sealed-secrets \
@@ -869,52 +883,53 @@ flux create helmrelease sealed-secrets \
   --crds CreateReplace \
   --chart-version ">=1.15.0-0" \
   --export > flux-gitops/kind/sealed-secrets/sealed-secrets-helmrelease.yaml
-
+```
 
 Install
 https://github.com/bitnami-labs/sealed-secrets/releases
 
 # Set this to, for example, KUBESEAL_VERSION='0.26.2'
+```shell
 KUBESEAL_VERSION='0.26.2' 
 wget "https://github.com/bitnami-labs/sealed-secrets/releases/download/v${KUBESEAL_VERSION:?}/kubeseal-${KUBESEAL_VERSION:?}-linux-amd64.tar.gz"
 tar -xvzf kubeseal-${KUBESEAL_VERSION:?}-linux-amd64.tar.gz kubeseal
 sudo install -m 755 kubeseal /usr/local/bin/kubeseal
-
+```
 
 Отримання ключа для Sealed Secrets
-
+```shell
 kubeseal --fetch-cert \
 --controller-name=sealed-secrets-controller \
 --controller-namespace=flux-system \
 > kind/sealed-secrets/sealed-secrets-cert.pem
-
+```
 # Abot
 
 Створення namespace для Abot
-
+```shell
 cat <<EOF > flux-gitops/kind/dev/abot/ns.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
   name: abot
 EOF
-
+```
 # Створення сікрету
-
+```shell
 read -s TELE_TOKEN
 kubectl -n abot create secret generic abot \
 --dry-run=client \
 --from-literal=token=$TELE_TOKEN \
 -o yaml > kind/sealed-secrets/secret.yaml
-
+```
 Шифрування сікрету
-
+```shell
 kubeseal --format=yaml \
 --cert=kind/sealed-secrets/sealed-secrets-cert.pem \
 < kind/sealed-secrets/secret.yaml > kind/sealed-secrets/secret-sealed.yaml
-
+```
 Створюємо маніфесту для розгортання Kbot
-
+```shell
 cat <<EOF > flux-gitops/kind/dev/abot/abot-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -958,13 +973,13 @@ spec:
         - name: METRICS_HOST
           value: opentelemetry-collector.monitoring.svc.cluster.local:4317
 EOF
-
+```
 Виконуємо фінальні операції додавання до GIT.
 
 # Grafana dashboard
 
 Відкриваємо порти для доступу до дашбордів
-
+```shell
 kubectl port-forward service/grafana 3000:80 -n monitoring 
-
+```
 Codespace створює посилання, за яким можемо взаємодіяти з Grafana.
