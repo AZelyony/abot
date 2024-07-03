@@ -7,16 +7,30 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/telebot.v3"
 )
 
+const telegramMessageLimit = 4000 // Telegram message character limit
+
 var (
 	// Teletoken bot
 	Teletoken = os.Getenv("TELE_TOKEN")
-	Status    = "Waiting command"
+)
+
+type ScanStatus struct {
+	InProgress bool
+	Result     string
+}
+
+var (
+	statuses = make(map[int64]*ScanStatus)
+	mu       sync.Mutex
 )
 
 // abotCmd represents the abot command
@@ -49,6 +63,54 @@ to quickly create a Cobra application.`,
 		//			return m.Send("Welcome! Type 'hello' or 'help' for more information.")
 		//		})
 
+		// Обработка команды /scan
+		abot.Handle("/scan", func(c telebot.Context) error {
+			// Разделение команды на аргументы
+			args := strings.Split(c.Message().Text, " ")
+			if len(args) != 2 {
+				return c.Send("Usage: /scan 192.168.0.1/24")
+			}
+
+			// Запуск сканирования в горутине
+			go func(userID int64, ipRange string) {
+				mu.Lock()
+				statuses[userID] = &ScanStatus{InProgress: true}
+				mu.Unlock()
+
+				c.Send(fmt.Sprintf("Starting scan for range: %s", ipRange))
+
+				// Пример сканирования (замените на вашу реализацию)
+				result := performScan(ipRange)
+
+				mu.Lock()
+				statuses[userID].InProgress = false
+				statuses[userID].Result = result
+				mu.Unlock()
+
+				sendLongMessage(c, fmt.Sprintf("Scan result for %s: %s", ipRange, result))
+			}(c.Sender().ID, args[1])
+
+			return nil
+		})
+
+		// Обработка команды /status
+		abot.Handle("/status", func(c telebot.Context) error {
+			mu.Lock()
+			status, exists := statuses[c.Sender().ID]
+			mu.Unlock()
+
+			if !exists {
+				return c.Send("No scan started yet.")
+			}
+
+			if status.InProgress {
+				return c.Send("Scan is still in progress.")
+			}
+
+			sendLongMessage(c, fmt.Sprintf("Last scan result: %s", status.Result))
+			return nil
+		})
+
 		abot.Handle(telebot.OnText, func(m telebot.Context) error {
 			log.Print(m.Message().Payload, m.Text())
 			//payload := m.Message().Payload
@@ -59,8 +121,6 @@ to quickly create a Cobra application.`,
 				err = m.Send(fmt.Sprintf("Hello I'm Abot %s!", appVersion))
 			case "help", "Help":
 				err = m.Send("This is the help message.")
-			case "status", "Status":
-				err = m.Send(fmt.Sprintf("Status: %s", Status))
 			default:
 				err = m.Send("Unknown command. Please try again.")
 			}
@@ -70,6 +130,32 @@ to quickly create a Cobra application.`,
 
 		abot.Start()
 	},
+}
+
+// Функция для отправки длинного сообщения
+func sendLongMessage(c telebot.Context, message string) {
+	for len(message) > 0 {
+		if len(message) > telegramMessageLimit {
+			c.Send(message[:telegramMessageLimit])
+			message = message[telegramMessageLimit:]
+		} else {
+			c.Send(message)
+			break
+		}
+	}
+}
+
+// Функция сканирования
+func performScan(ipRange string) string {
+
+	fmt.Printf("Scan range %s started ", ipRange)
+	cmd := exec.Command("nmap", "-sn", ipRange)
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Sprintf("Error: %v", err)
+	}
+
+	return string(output)
 }
 
 func init() {
