@@ -42,10 +42,18 @@ to quickly create a Cobra application.`,
 			log.Fatalf("Please check TELE_TOKEN env variable. %s", err)
 		}
 
+		//		abot.Handle("/start", func(m telebot.Context) error {
+		//			payload := m.Message().Text
+		//			logger.Info().Str("Command", m.Text()).Msg("Received command start")
+
+		//			return m.Send("Welcome! Type 'hello' or 'help' for more information.")
+		//		})
+
 		abot.Handle(telebot.OnText, func(m telebot.Context) error {
 			log.Print(m.Message().Payload, m.Text())
-			payload := m.Message().Payload
-
+			//payload := m.Message().Payload
+			payload := m.Text()
+			var err error
 			switch payload {
 			case "hello", "Hello":
 				err = m.Send(fmt.Sprintf("Hello I'm Abot %s!", appVersion))
