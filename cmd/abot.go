@@ -139,9 +139,9 @@ to quickly create a Cobra application.`,
 
 			var err error
 			switch payload {
-			case "hello":
+			case "hello", "Hello":
 				err = m.Send(fmt.Sprintf("Hello I'm Abot %s!", appVersion))
-			case "help":
+			case "help", "Help":
 				err = m.Send("This is the help message.")
 			default:
 				err = m.Send("Unknown command. Please try again.")
