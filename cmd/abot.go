@@ -16,6 +16,7 @@ import (
 var (
 	// Teletoken bot
 	Teletoken = os.Getenv("TELE_TOKEN")
+	Status    = "Waiting command"
 )
 
 // abotCmd represents the abot command
@@ -46,8 +47,14 @@ to quickly create a Cobra application.`,
 			payload := m.Message().Payload
 
 			switch payload {
-			case "hello":
+			case "hello", "Hello":
 				err = m.Send(fmt.Sprintf("Hello I'm Abot %s!", appVersion))
+			case "help", "Help":
+				err = m.Send("This is the help message.")
+			case "status", "Status":
+				err = m.Send(fmt.Sprintf("Status: %s", Status))
+			default:
+				err = m.Send("Unknown command. Please try again.")
 			}
 
 			return err
