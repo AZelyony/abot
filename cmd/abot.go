@@ -67,28 +67,34 @@ to quickly create a Cobra application.`,
 		abot.Handle("/scan", func(c telebot.Context) error {
 			// Разделение команды на аргументы
 			args := strings.Split(c.Message().Text, " ")
-			if len(args) != 2 {
-				return c.Send("Usage: /scan 192.168.0.1/24")
+			if len(args) < 2 || len(args) > 3 {
+				return c.Send("Usage: /scan 192.168.0.1 [flag]")
+			}
+
+			ipRange := args[1]
+			flag := ""
+			if len(args) == 3 {
+				flag = args[2]
 			}
 
 			// Запуск сканирования в горутине
-			go func(userID int64, ipRange string) {
+			go func(userID int64, ipRange, flag string) {
 				mu.Lock()
 				statuses[userID] = &ScanStatus{InProgress: true}
 				mu.Unlock()
 
-				c.Send(fmt.Sprintf("Starting scan for range: %s", ipRange))
+				c.Send(fmt.Sprintf("Starting scan for range: %s with flag: %s", ipRange, flag))
 
-				// Пример сканирования (замените на вашу реализацию)
-				result := performScan(ipRange)
+				// Сканирование
+				result := performScan(ipRange, flag)
 
 				mu.Lock()
 				statuses[userID].InProgress = false
 				statuses[userID].Result = result
 				mu.Unlock()
 
-				sendLongMessage(c, fmt.Sprintf("Scan result for %s: %s", ipRange, result))
-			}(c.Sender().ID, args[1])
+				sendLongMessage(c, fmt.Sprintf("Scan result for %s with flag %s: %s", ipRange, flag, result))
+			}(c.Sender().ID, ipRange, flag)
 
 			return nil
 		})
@@ -146,10 +152,21 @@ func sendLongMessage(c telebot.Context, message string) {
 }
 
 // Функция сканирования
-func performScan(ipRange string) string {
+func performScan(ipRange string, flag string) string {
 
-	fmt.Printf("Scan range %s started ", ipRange)
-	cmd := exec.Command("nmap", "-sn", ipRange)
+	var cmd *exec.Cmd
+
+	// Определение команды в зависимости от флага
+	switch flag {
+	case "Pn":
+		cmd = exec.Command("nmap", "--open", ipRange, "-Pn")
+	case "Sv":
+		cmd = exec.Command("nmap", "--open", ipRange, "-Sv")
+	case "":
+		cmd = exec.Command("nmap", "-sn", ipRange)
+	default:
+		return "Invalid flag. Use 'Pn' or 'Sv'."
+	}
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Sprintf("Error: %v", err)
