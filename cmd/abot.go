@@ -126,7 +126,7 @@ to quickly create a Cobra application.`,
 			case "hello", "Hello":
 				err = m.Send(fmt.Sprintf("Hello I'm Abot %s!", appVersion))
 			case "help", "Help":
-				err = m.Send("This is the help message.")
+				err = m.Send("Use command: /scan, /status")
 			default:
 				err = m.Send("Unknown command. Please try again.")
 			}
@@ -160,8 +160,8 @@ func performScan(ipRange string, flag string) string {
 	switch flag {
 	case "Pn":
 		cmd = exec.Command("nmap", "--open", ipRange, "-Pn")
-	case "Sv":
-		cmd = exec.Command("nmap", "--open", ipRange, "-Sv")
+	case "sV":
+		cmd = exec.Command("nmap", "--open", ipRange, "-sV")
 	case "":
 		cmd = exec.Command("nmap", "-sn", ipRange)
 	default:
