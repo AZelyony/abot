@@ -4,10 +4,13 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"encoding/xml"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -84,6 +87,7 @@ to quickly create a Cobra application.`,
 				mu.Unlock()
 
 				c.Send(fmt.Sprintf("Starting scan for range: %s with flag: %s", ipRange, flag))
+				fmt.Printf("Starting scan for range: %s with flag: %s", ipRange, flag)
 
 				// Сканирование
 				result := performScan(ipRange, flag)
@@ -94,6 +98,19 @@ to quickly create a Cobra application.`,
 				mu.Unlock()
 
 				sendLongMessage(c, fmt.Sprintf("Scan result for %s with flag %s: %s", ipRange, flag, result))
+
+				// Сохранение и сравнение результатов сканирования
+				if saveScanResult(ipRange, flag, result) {
+					previousScan, currentScan := getPreviousAndCurrentScans(ipRange, flag)
+					if previousScan != "" && currentScan != "" {
+						if scanChanged(previousScan, currentScan) {
+							sendLongMessage(c, "Alert: Scan results have changed!")
+						} else {
+							sendLongMessage(c, "No changes detected in the scan results.")
+						}
+					}
+				}
+
 			}(c.Sender().ID, ipRange, flag)
 
 			return nil
@@ -173,6 +190,116 @@ func performScan(ipRange string, flag string) string {
 	}
 
 	return string(output)
+}
+
+// Сохранение результатов сканирования в файлы
+func saveScanResult(ipRange, flag, result string) bool {
+	dir := fmt.Sprintf("scans/%s/%s", ipRange, flag)
+	os.MkdirAll(dir, 0755)
+
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		log.Println("Error reading scan directory:", err)
+		return false
+	}
+
+	if len(files) >= 3 {
+		os.Remove(filepath.Join(dir, files[0].Name()))
+	}
+
+	filename := fmt.Sprintf("%s/scan_%d.xml", dir, time.Now().Unix())
+	err = os.WriteFile(filename, []byte(result), 0644)
+	if err != nil {
+		log.Println("Error writing scan result:", err)
+		return false
+	}
+
+	return true
+}
+
+// Получение двух последних сканирований
+func getPreviousAndCurrentScans(ipRange, flag string) (string, string) {
+	dir := fmt.Sprintf("scans/%s/%s", ipRange, flag)
+	files, err := os.ReadDir(dir)
+	if err != nil || len(files) < 2 {
+		return "", ""
+	}
+
+	prevScan, _ := os.ReadFile(filepath.Join(dir, files[len(files)-2].Name()))
+	currScan, _ := os.ReadFile(filepath.Join(dir, files[len(files)-1].Name()))
+
+	return string(prevScan), string(currScan)
+}
+
+// Структуры для разбора XML
+type NmapRun struct {
+	XMLName xml.Name `xml:"nmaprun"`
+	Hosts   []Host   `xml:"host"`
+}
+
+type Host struct {
+	XMLName   xml.Name   `xml:"host"`
+	Address   Address    `xml:"address"`
+	Ports     Ports      `xml:"ports"`
+	Hostnames []Hostname `xml:"hostnames>hostname"`
+}
+
+type Address struct {
+	XMLName xml.Name `xml:"address"`
+	Addr    string   `xml:"addr,attr"`
+}
+
+type Ports struct {
+	XMLName xml.Name `xml:"ports"`
+	Ports   []Port   `xml:"port"`
+}
+
+type Port struct {
+	XMLName xml.Name `xml:"port"`
+	PortID  string   `xml:"portid,attr"`
+	State   State    `xml:"state"`
+	Service Service  `xml:"service"`
+}
+
+type State struct {
+	XMLName xml.Name `xml:"state"`
+	State   string   `xml:"state,attr"`
+}
+
+type Service struct {
+	XMLName xml.Name `xml:"service"`
+	Name    string   `xml:"name,attr"`
+}
+
+type Hostname struct {
+	Name string `xml:"name,attr"`
+}
+
+// Функция для извлечения значимых данных из сканирования
+func extractRelevantData(scan string) NmapRun {
+	var result NmapRun
+	xml.Unmarshal([]byte(scan), &result)
+	return result
+}
+
+// Сравнение двух сканирований
+func scanChanged(prevScan, currScan string) bool {
+	prevData := extractRelevantData(prevScan)
+	currData := extractRelevantData(currScan)
+
+	// Сравнение хостов
+	prevHosts := make(map[string]Host)
+	currHosts := make(map[string]Host)
+
+	for _, host := range prevData.Hosts {
+		prevHosts[host.Address.Addr] = host
+	}
+
+	for _, host := range currData.Hosts {
+		currHosts[host.Address.Addr] = host
+	}
+
+	return !reflect.DeepEqual(prevHosts, currHosts)
 }
 
 func init() {
