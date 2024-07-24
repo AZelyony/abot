@@ -8,10 +8,12 @@
 *.tgz
 *.so
 *.dylib
+*.xml
 
 abot
 yaml/secret-env.yaml
 yaml/secret.yaml
+scans/*
 
 #config files
 vars.tfvars

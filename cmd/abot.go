@@ -48,7 +48,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("abot %s started ", appVersion)
+		fmt.Printf("abot %s started \r\n", appVersion)
 		abot, err := telebot.NewBot(telebot.Settings{
 			URL:    "",
 			Token:  Teletoken,
@@ -58,13 +58,6 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Fatalf("Please check TELE_TOKEN env variable. %s", err)
 		}
-
-		//		abot.Handle("/start", func(m telebot.Context) error {
-		//			payload := m.Message().Text
-		//			logger.Info().Str("Command", m.Text()).Msg("Received command start")
-
-		//			return m.Send("Welcome! Type 'hello' or 'help' for more information.")
-		//		})
 
 		// Обработка команды /scan
 		abot.Handle("/scan", func(c telebot.Context) error {
@@ -87,7 +80,7 @@ to quickly create a Cobra application.`,
 				mu.Unlock()
 
 				c.Send(fmt.Sprintf("Starting scan for range: %s with flag: %s", ipRange, flag))
-				fmt.Printf("Starting scan for range: %s with flag: %s", ipRange, flag)
+				fmt.Printf("Starting scan for range: %s with flag: %s \r\n", ipRange, flag)
 
 				// Сканирование
 				result := performScan(ipRange, flag)
@@ -100,7 +93,7 @@ to quickly create a Cobra application.`,
 				sendLongMessage(c, fmt.Sprintf("Scan result for %s with flag %s: %s", ipRange, flag, result))
 
 				// Сохранение и сравнение результатов сканирования
-				if saveScanResult(ipRange, flag, result) {
+				if saveScanResult(ipRange, flag) {
 					previousScan, currentScan := getPreviousAndCurrentScans(ipRange, flag)
 					if previousScan != "" && currentScan != "" {
 						if scanChanged(previousScan, currentScan) {
@@ -118,6 +111,7 @@ to quickly create a Cobra application.`,
 
 		// Обработка команды /status
 		abot.Handle("/status", func(c telebot.Context) error {
+			log.Print(c.Message().Payload, c.Text())
 			mu.Lock()
 			status, exists := statuses[c.Sender().ID]
 			mu.Unlock()
@@ -141,7 +135,7 @@ to quickly create a Cobra application.`,
 			var err error
 			switch payload {
 			case "hello", "Hello":
-				err = m.Send(fmt.Sprintf("Hello I'm Abot %s!", appVersion))
+				err = m.Send(fmt.Sprintf("Hello I'm Abot %s!\r\n", appVersion))
 			case "help", "Help":
 				err = m.Send("Use command: /scan, /status")
 			default:
@@ -169,31 +163,33 @@ func sendLongMessage(c telebot.Context, message string) {
 }
 
 // Функция сканирования
-func performScan(ipRange string, flag string) string {
-
+func performScan(ipRange, flag string) string {
 	var cmd *exec.Cmd
 
 	// Определение команды в зависимости от флага
 	switch flag {
 	case "Pn":
-		cmd = exec.Command("nmap", "--open", ipRange, "-Pn")
+		cmd = exec.Command("nmap", "--open", ipRange, "-Pn", "-oX", "current_scan.xml")
 	case "sV":
-		cmd = exec.Command("nmap", "--open", ipRange, "-sV")
+		cmd = exec.Command("nmap", "--open", ipRange, "-sV", "-oX", "current_scan.xml")
 	case "":
-		cmd = exec.Command("nmap", "-sn", ipRange)
+		cmd = exec.Command("nmap", "-sn", ipRange, "-oX", "current_scan.xml")
 	default:
-		return "Invalid flag. Use 'Pn' or 'Sv'."
-	}
-	output, err := cmd.Output()
-	if err != nil {
-		return fmt.Sprintf("Error: %v", err)
+		return "Invalid flag. Use 'Pn', 'sV' or leave it empty."
 	}
 
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Sprintf("Error: %v\r\n", err)
+	}
 	return string(output)
 }
 
 // Сохранение результатов сканирования в файлы
-func saveScanResult(ipRange, flag, result string) bool {
+func saveScanResult(ipRange, flag string) bool {
+	// Замена символа "/" на "_"
+	ipRange = strings.ReplaceAll(ipRange, "/", "_")
+
 	dir := fmt.Sprintf("scans/%s/%s", ipRange, flag)
 	os.MkdirAll(dir, 0755)
 
@@ -207,10 +203,12 @@ func saveScanResult(ipRange, flag, result string) bool {
 		os.Remove(filepath.Join(dir, files[0].Name()))
 	}
 
-	filename := fmt.Sprintf("%s/scan_%d.xml", dir, time.Now().Unix())
-	err = os.WriteFile(filename, []byte(result), 0644)
+	// Перемещение файла результата сканирования
+	currentFile := "current_scan.xml"
+	newFilename := fmt.Sprintf("%s/scan_%d.xml", dir, time.Now().Unix())
+	err = os.Rename(currentFile, newFilename)
 	if err != nil {
-		log.Println("Error writing scan result:", err)
+		log.Println("Error moving scan result:", err)
 		return false
 	}
 
@@ -219,6 +217,9 @@ func saveScanResult(ipRange, flag, result string) bool {
 
 // Получение двух последних сканирований
 func getPreviousAndCurrentScans(ipRange, flag string) (string, string) {
+	// Замена символа "/" на "_"
+	ipRange = strings.ReplaceAll(ipRange, "/", "_")
+
 	dir := fmt.Sprintf("scans/%s/%s", ipRange, flag)
 	files, err := os.ReadDir(dir)
 	if err != nil || len(files) < 2 {
@@ -227,52 +228,79 @@ func getPreviousAndCurrentScans(ipRange, flag string) (string, string) {
 
 	prevScan, _ := os.ReadFile(filepath.Join(dir, files[len(files)-2].Name()))
 	currScan, _ := os.ReadFile(filepath.Join(dir, files[len(files)-1].Name()))
+	fmt.Printf("Prev - %s \r\n", prevScan)
+	fmt.Printf("Curr - %s \r\n", currScan)
 
 	return string(prevScan), string(currScan)
 }
 
 // Структуры для разбора XML
 type NmapRun struct {
-	XMLName xml.Name `xml:"nmaprun"`
-	Hosts   []Host   `xml:"host"`
+	Scanner          string   `xml:"scanner,attr"`
+	Args             string   `xml:"args,attr"`
+	Start            string   `xml:"start,attr"`
+	StartStr         string   `xml:"startstr,attr"`
+	Version          string   `xml:"version,attr"`
+	XmlOutputVersion string   `xml:"xmloutputversion,attr"`
+	ScanInfo         ScanInfo `xml:"scaninfo"`
+	Hosts            []Host   `xml:"host"`
+}
+
+type ScanInfo struct {
+	Type        string `xml:"type,attr"`
+	Protocol    string `xml:"protocol,attr"`
+	NumServices string `xml:"numservices,attr"`
+	Services    string `xml:"services,attr"`
 }
 
 type Host struct {
-	XMLName   xml.Name   `xml:"host"`
-	Address   Address    `xml:"address"`
-	Ports     Ports      `xml:"ports"`
-	Hostnames []Hostname `xml:"hostnames>hostname"`
+	Status    Status    `xml:"status"`
+	Address   Address   `xml:"address"`
+	Hostnames Hostnames `xml:"hostnames"`
+	Ports     Ports     `xml:"ports"`
+}
+
+type Status struct {
+	State     string `xml:"state,attr"`
+	Reason    string `xml:"reason,attr"`
+	ReasonTTL string `xml:"reason_ttl,attr"`
 }
 
 type Address struct {
-	XMLName xml.Name `xml:"address"`
-	Addr    string   `xml:"addr,attr"`
+	Addr     string `xml:"addr,attr"`
+	AddrType string `xml:"addrtype,attr"`
 }
 
-type Ports struct {
-	XMLName xml.Name `xml:"ports"`
-	Ports   []Port   `xml:"port"`
-}
-
-type Port struct {
-	XMLName xml.Name `xml:"port"`
-	PortID  string   `xml:"portid,attr"`
-	State   State    `xml:"state"`
-	Service Service  `xml:"service"`
-}
-
-type State struct {
-	XMLName xml.Name `xml:"state"`
-	State   string   `xml:"state,attr"`
-}
-
-type Service struct {
-	XMLName xml.Name `xml:"service"`
-	Name    string   `xml:"name,attr"`
+type Hostnames struct {
+	Hostnames []Hostname `xml:"hostname"`
 }
 
 type Hostname struct {
 	Name string `xml:"name,attr"`
+	Type string `xml:"type,attr"`
+}
+
+type Ports struct {
+	Ports []Port `xml:"port"`
+}
+
+type Port struct {
+	Protocol string  `xml:"protocol,attr"`
+	PortID   string  `xml:"portid,attr"`
+	State    State   `xml:"state"`
+	Service  Service `xml:"service"`
+}
+
+type State struct {
+	State     string `xml:"state,attr"`
+	Reason    string `xml:"reason,attr"`
+	ReasonTTL string `xml:"reason_ttl,attr"`
+}
+
+type Service struct {
+	Name    string `xml:"name,attr"`
+	Product string `xml:"product,attr"`
+	Version string `xml:"version,attr"`
 }
 
 // Функция для извлечения значимых данных из сканирования
@@ -295,9 +323,14 @@ func scanChanged(prevScan, currScan string) bool {
 		prevHosts[host.Address.Addr] = host
 	}
 
+	fmt.Printf("Prev Scan \r\n")
+	fmt.Printf("%+v\n", prevHosts)
+
 	for _, host := range currData.Hosts {
 		currHosts[host.Address.Addr] = host
 	}
+	fmt.Printf("\r\n\r\n Curr Scan \r\n")
+	fmt.Printf("%+v\n", currHosts)
 
 	return !reflect.DeepEqual(prevHosts, currHosts)
 }
