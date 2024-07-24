@@ -90,6 +90,7 @@ to quickly create a Cobra application.`,
 				statuses[userID].Result = result
 				mu.Unlock()
 
+				fmt.Printf("%s - finished scan", time.Now().String())
 				sendLongMessage(c, fmt.Sprintf("Scan result for %s with flag %s: %s", ipRange, flag, result))
 
 				// Сохранение и сравнение результатов сканирования
