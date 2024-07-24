@@ -5,7 +5,7 @@
 replicaCount: 1
 image:
   repository: azelyony
-  tag: "v1.0.6-1e01b58"
+  tag: "v1.0.6-7e85240"
   arch: amd64
 secret:
   name: "abot"
