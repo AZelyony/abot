@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
 	"gopkg.in/telebot.v3"
 )
@@ -90,7 +91,7 @@ to quickly create a Cobra application.`,
 				statuses[userID].Result = result
 				mu.Unlock()
 
-				fmt.Printf("%s - finished scan", time.Now().String())
+				fmt.Printf("%s - finished scan\r\n", time.Now().String())
 				sendLongMessage(c, fmt.Sprintf("Scan result for %s with flag %s: %s", ipRange, flag, result))
 
 				// Сохранение и сравнение результатов сканирования
@@ -333,7 +334,29 @@ func scanChanged(prevScan, currScan string) bool {
 	fmt.Printf("\r\n\r\n Curr Scan \r\n")
 	fmt.Printf("%+v\n", currHosts)
 
-	return !reflect.DeepEqual(prevHosts, currHosts)
+	if !reflect.DeepEqual(prevHosts, currHosts) {
+		// Поиск и вывод различий
+		for addr, prevHost := range prevHosts {
+			currHost, exists := currHosts[addr]
+			if !exists {
+				fmt.Printf("Host %s removed\n", addr)
+			} else {
+				if diff := cmp.Diff(prevHost, currHost); diff != "" {
+					fmt.Printf("Differences for host %s:\n%s\n", addr, diff)
+				}
+			}
+		}
+
+		for addr, currHost := range currHosts {
+			if _, exists := prevHosts[addr]; !exists {
+				fmt.Printf("Host %s added\n", addr)
+			}
+		}
+
+		return true
+	}
+
+	return false
 }
 
 func init() {
