@@ -229,8 +229,8 @@ func getPreviousAndCurrentScans(ipRange, flag string) (string, string) {
 
 	prevScan, _ := os.ReadFile(filepath.Join(dir, files[len(files)-2].Name()))
 	currScan, _ := os.ReadFile(filepath.Join(dir, files[len(files)-1].Name()))
-	fmt.Printf("Prev - %s \r\n", prevScan)
-	fmt.Printf("Curr - %s \r\n", currScan)
+	fmt.Printf("Prev - %s \r\n", filepath.Join(dir, files[len(files)-2].Name()))
+	fmt.Printf("Curr - %s \r\n", filepath.Join(dir, files[len(files)-1].Name()))
 
 	return string(prevScan), string(currScan)
 }
