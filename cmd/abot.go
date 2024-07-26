@@ -347,7 +347,7 @@ func scanChanged(prevScan, currScan string) bool {
 			}
 		}
 
-		for addr, currHost := range currHosts {
+		for addr := range currHosts {
 			if _, exists := prevHosts[addr]; !exists {
 				fmt.Printf("Host %s added\n", addr)
 			}
