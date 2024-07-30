@@ -33,8 +33,9 @@ type ScanStatus struct {
 }
 
 var (
-	statuses = make(map[int64]*ScanStatus)
-	mu       sync.Mutex
+	statuses  = make(map[int64]*ScanStatus)
+	mu        sync.Mutex
+	alertFile = "alert.mp3"
 )
 
 // abotCmd represents the abot command
@@ -81,7 +82,7 @@ to quickly create a Cobra application.`,
 				mu.Unlock()
 
 				c.Send(fmt.Sprintf("Starting scan for range: %s with flag: %s", ipRange, flag))
-				fmt.Printf("Starting scan for range: %s with flag: %s \r\n", ipRange, flag)
+				fmt.Printf("%s - starting scan for range: %s with flag: %s \r\n", time.Now().Format("2006/01/02 15:04:01"), ipRange, flag)
 
 				// Сканирование
 				result := performScan(ipRange, flag)
@@ -91,7 +92,7 @@ to quickly create a Cobra application.`,
 				statuses[userID].Result = result
 				mu.Unlock()
 
-				fmt.Printf("%s - finished scan\r\n", time.Now().String())
+				fmt.Printf("%s - finished scan\r\n", time.Now().Format("2006/01/02 15:04:01"))
 				sendLongMessage(c, fmt.Sprintf("Scan result for %s with flag %s: %s", ipRange, flag, result))
 
 				// Сохранение и сравнение результатов сканирования
@@ -100,6 +101,7 @@ to quickly create a Cobra application.`,
 					if previousScan != "" && currentScan != "" {
 						if scanChanged(previousScan, currentScan) {
 							sendLongMessage(c, "Alert: Scan results have changed!")
+							sendAlertAudio(c)
 						} else {
 							sendLongMessage(c, "No changes detected in the scan results.")
 						}
@@ -149,6 +151,12 @@ to quickly create a Cobra application.`,
 
 		abot.Start()
 	},
+}
+
+// Функция для отправки аудиофайла
+func sendAlertAudio(c telebot.Context) {
+	audio := &telebot.Audio{File: telebot.FromDisk(alertFile)}
+	c.Send(audio)
 }
 
 // Функция для отправки длинного сообщения
