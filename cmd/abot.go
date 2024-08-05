@@ -61,6 +61,37 @@ to quickly create a Cobra application.`,
 			log.Fatalf("Please check TELE_TOKEN env variable. %s", err)
 		}
 
+		menu := &telebot.ReplyMarkup{ResizeKeyboard: true}
+		btnScan1 := menu.Text("FULL Scan sV")
+		btnScan2 := menu.Text("FULL Scan no ping")
+		btnScan3 := menu.Text("Fast Scan")
+		btnBack := menu.Text("Back")
+
+		menu.Reply(
+			menu.Row(btnScan1, btnScan2),
+			menu.Row(btnScan3, btnBack),
+		)
+
+		abot.Handle("/menu", func(c telebot.Context) error {
+			return c.Send("Choose an option:", menu)
+		})
+
+		abot.Handle(&btnScan1, func(c telebot.Context) error {
+			return c.Send("/scan 192.168.0.1 sV")
+		})
+
+		abot.Handle(&btnScan2, func(c telebot.Context) error {
+			return c.Send("/scan 192.168.0.2 Pn")
+		})
+
+		abot.Handle(&btnScan3, func(c telebot.Context) error {
+			return c.Send("/scan 192.168.0.2")
+		})
+
+		abot.Handle(&btnBack, func(c telebot.Context) error {
+			return c.Send("You can now type commands.")
+		})
+
 		// Обработка команды /scan
 		abot.Handle("/scan", func(c telebot.Context) error {
 			// Разделение команды на аргументы
