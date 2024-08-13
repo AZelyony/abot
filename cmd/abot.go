@@ -77,19 +77,22 @@ to quickly create a Cobra application.`,
 		})
 
 		abot.Handle(&btnScan1, func(c telebot.Context) error {
-			return c.Send("/scan 192.168.0.1 sV")
+			//return c.Send("/scan 192.168.0.1 sV")
+			return startScan(c, "192.168.0.1", "sV")
 		})
 
 		abot.Handle(&btnScan2, func(c telebot.Context) error {
-			return c.Send("/scan 192.168.0.2 Pn")
+			//return c.Send("/scan 192.168.0.2 Pn")
+			return startScan(c, "192.168.0.2", "Pn")
 		})
 
 		abot.Handle(&btnScan3, func(c telebot.Context) error {
-			return c.Send("/scan 192.168.0.2")
+			//return c.Send("/scan 192.168.0.2")
+			return startScan(c, "192.168.0.3", "")
 		})
 
 		abot.Handle(&btnBack, func(c telebot.Context) error {
-			return c.Send("You can now type commands.")
+			return c.Send("You can type your commands.")
 		})
 
 		// Обработка команды /scan
@@ -106,42 +109,7 @@ to quickly create a Cobra application.`,
 				flag = args[2]
 			}
 
-			// Запуск сканирования в горутине
-			go func(userID int64, ipRange, flag string) {
-				mu.Lock()
-				statuses[userID] = &ScanStatus{InProgress: true}
-				mu.Unlock()
-
-				c.Send(fmt.Sprintf("Starting scan for range: %s with flag: %s", ipRange, flag))
-				fmt.Printf("%s - starting scan for range: %s with flag: %s \r\n", time.Now().Format("2006/01/02 15:04:01"), ipRange, flag)
-
-				// Сканирование
-				result := performScan(ipRange, flag)
-
-				mu.Lock()
-				statuses[userID].InProgress = false
-				statuses[userID].Result = result
-				mu.Unlock()
-
-				fmt.Printf("%s - finished scan\r\n", time.Now().Format("2006/01/02 15:04:01"))
-				sendLongMessage(c, fmt.Sprintf("Scan result for %s with flag %s: %s", ipRange, flag, result))
-
-				// Сохранение и сравнение результатов сканирования
-				if saveScanResult(ipRange, flag) {
-					previousScan, currentScan := getPreviousAndCurrentScans(ipRange, flag)
-					if previousScan != "" && currentScan != "" {
-						if scanChanged(previousScan, currentScan) {
-							sendLongMessage(c, "Alert: Scan results have changed!")
-							sendAlertAudio(c)
-						} else {
-							sendLongMessage(c, "No changes detected in the scan results.")
-						}
-					}
-				}
-
-			}(c.Sender().ID, ipRange, flag)
-
-			return nil
+			return startScan(c, ipRange, flag)
 		})
 
 		// Обработка команды /status
@@ -182,6 +150,42 @@ to quickly create a Cobra application.`,
 
 		abot.Start()
 	},
+}
+
+func startScan(c telebot.Context, ipRange, flag string) error {
+	go func(userID int64, ipRange, flag string) {
+		mu.Lock()
+		statuses[userID] = &ScanStatus{InProgress: true}
+		mu.Unlock()
+
+		c.Send(fmt.Sprintf("Starting scan for range: %s with flag: %s", ipRange, flag))
+		fmt.Printf("%s - starting scan for range: %s with flag: %s \r\n", time.Now().Format("2006/01/02 15:04:01"), ipRange, flag)
+
+		// Сканирование
+		result := performScan(ipRange, flag)
+
+		mu.Lock()
+		statuses[userID].InProgress = false
+		statuses[userID].Result = result
+		mu.Unlock()
+
+		fmt.Printf("%s - finished scan\r\n", time.Now().Format("2006/01/02 15:04:01"))
+		sendLongMessage(c, fmt.Sprintf("Scan result for %s with flag %s: %s", ipRange, flag, result))
+
+		// Сохранение и сравнение результатов сканирования
+		if saveScanResult(ipRange, flag) {
+			previousScan, currentScan := getPreviousAndCurrentScans(ipRange, flag)
+			if previousScan != "" && currentScan != "" {
+				if scanChanged(previousScan, currentScan) {
+					sendLongMessage(c, "Alert: Scan results have changed!")
+					sendAlertAudio(c)
+				} else {
+					sendLongMessage(c, "No changes detected in the scan results.")
+				}
+			}
+		}
+	}(c.Sender().ID, ipRange, flag)
+	return nil
 }
 
 // Функция для отправки аудиофайла
