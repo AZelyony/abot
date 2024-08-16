@@ -63,7 +63,7 @@ to quickly create a Cobra application.`,
 
 		menu := &telebot.ReplyMarkup{ResizeKeyboard: true}
 		btnScan1 := menu.Text("FULL Scan sV")
-		btnScan2 := menu.Text("FULL Scan no ping")
+		btnScan2 := menu.Text("Scan no ping")
 		btnScan3 := menu.Text("Fast Scan")
 		btnBack := menu.Text("Back")
 
@@ -140,7 +140,7 @@ to quickly create a Cobra application.`,
 			case "hello", "Hello":
 				err = m.Send(fmt.Sprintf("Hello I'm Abot %s!\r\n", appVersion))
 			case "help", "Help":
-				err = m.Send("Use command: /scan, /status")
+				err = m.Send("Use command: /menu, /status")
 			default:
 				err = m.Send("Unknown command. Please try again.")
 			}
@@ -177,7 +177,7 @@ func startScan(c telebot.Context, ipRange, flag string) error {
 			previousScan, currentScan := getPreviousAndCurrentScans(ipRange, flag)
 			if previousScan != "" && currentScan != "" {
 				if scanChanged(previousScan, currentScan) {
-					sendLongMessage(c, "Alert: Scan results have changed!")
+					sendLongMessage(c, "ALERT: SCAN RESULTS HAVE CHANGED!!!")
 					sendAlertAudio(c)
 				} else {
 					sendLongMessage(c, "No changes detected in the scan results.")
@@ -216,7 +216,7 @@ func performScan(ipRange, flag string) string {
 	case "Pn":
 		cmd = exec.Command("nmap", "--open", ipRange, "-Pn", "-oX", "current_scan.xml")
 	case "sV":
-		cmd = exec.Command("nmap", "--open", ipRange, "-sV", "-oX", "current_scan.xml")
+		cmd = exec.Command("nmap", "--open -p- ", ipRange, "-sV", "-oX", "current_scan.xml")
 	case "":
 		cmd = exec.Command("nmap", "-sn", ipRange, "-oX", "current_scan.xml")
 	default:
@@ -235,8 +235,33 @@ func saveScanResult(ipRange, flag string) bool {
 	// Замена символа "/" на "_"
 	ipRange = strings.ReplaceAll(ipRange, "/", "_")
 
-	dir := fmt.Sprintf("scans/%s/%s", ipRange, flag)
-	os.MkdirAll(dir, 0755)
+	// Получение текущей рабочей директории
+	baseDir, err := os.Getwd()
+	if err != nil {
+		log.Println("Error getting current directory:", err)
+		return false
+	}
+
+	// Если флаг пустой, используем "fast" в качестве имени папки
+	if flag == "" {
+		flag = "fast"
+	}
+
+	// Создание полного пути к директории
+	dir := filepath.Join(baseDir, "scans", ipRange, flag)
+
+	err = os.MkdirAll(dir, 0755)
+	if err != nil {
+		log.Println("Error creating scan directory:", err)
+		return false
+	}
+
+	// Проверка наличия файла `current_scan.xml`
+	currentFile := filepath.Join(baseDir, "current_scan.xml")
+	if _, err := os.Stat(currentFile); os.IsNotExist(err) {
+		log.Println("Error: current_scan.xml does not exist")
+		return false
+	}
 
 	files, err := os.ReadDir(dir)
 	if err != nil {
@@ -245,12 +270,16 @@ func saveScanResult(ipRange, flag string) bool {
 	}
 
 	if len(files) >= 3 {
-		os.Remove(filepath.Join(dir, files[0].Name()))
+		// Удаление самого старого файла
+		err = os.Remove(filepath.Join(dir, files[0].Name()))
+		if err != nil {
+			log.Println("Error removing old scan result:", err)
+			return false
+		}
 	}
 
 	// Перемещение файла результата сканирования
-	currentFile := "current_scan.xml"
-	newFilename := fmt.Sprintf("%s/scan_%d.xml", dir, time.Now().Unix())
+	newFilename := filepath.Join(dir, fmt.Sprintf("scan_%d.xml", time.Now().Unix()))
 	err = os.Rename(currentFile, newFilename)
 	if err != nil {
 		log.Println("Error moving scan result:", err)
@@ -260,19 +289,42 @@ func saveScanResult(ipRange, flag string) bool {
 	return true
 }
 
-// Получение двух последних сканирований
 func getPreviousAndCurrentScans(ipRange, flag string) (string, string) {
 	// Замена символа "/" на "_"
 	ipRange = strings.ReplaceAll(ipRange, "/", "_")
 
-	dir := fmt.Sprintf("scans/%s/%s", ipRange, flag)
-	files, err := os.ReadDir(dir)
-	if err != nil || len(files) < 2 {
+	// Получение текущей рабочей директории
+	baseDir, err := os.Getwd()
+	if err != nil {
+		log.Println("Error getting current directory:", err)
 		return "", ""
 	}
 
-	prevScan, _ := os.ReadFile(filepath.Join(dir, files[len(files)-2].Name()))
-	currScan, _ := os.ReadFile(filepath.Join(dir, files[len(files)-1].Name()))
+	// Если флаг пустой, используем "fast" в качестве имени папки
+	if flag == "" {
+		flag = "fast"
+	}
+
+	// Создание полного пути к директории
+	dir := filepath.Join(baseDir, "scans", ipRange, flag)
+	files, err := os.ReadDir(dir)
+	if err != nil || len(files) < 2 {
+		log.Println("Error reading scan directory or not enough files:", err)
+		return "", ""
+	}
+
+	prevScan, err := os.ReadFile(filepath.Join(dir, files[len(files)-2].Name()))
+	if err != nil {
+		log.Println("Error reading previous scan file:", err)
+		return "", ""
+	}
+
+	currScan, err := os.ReadFile(filepath.Join(dir, files[len(files)-1].Name()))
+	if err != nil {
+		log.Println("Error reading current scan file:", err)
+		return "", ""
+	}
+
 	fmt.Printf("Prev - %s \r\n", filepath.Join(dir, files[len(files)-2].Name()))
 	fmt.Printf("Curr - %s \r\n", filepath.Join(dir, files[len(files)-1].Name()))
 
