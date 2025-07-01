@@ -65,11 +65,12 @@ to quickly create a Cobra application.`,
 		btnScan1 := menu.Text("FULL Scan sV")
 		btnScan2 := menu.Text("Scan no ping")
 		btnScan3 := menu.Text("Fast Scan")
+		btnScan4 := menu.Text("UDP Scan")
 		btnBack := menu.Text("Back")
 
 		menu.Reply(
 			menu.Row(btnScan1, btnScan2),
-			menu.Row(btnScan3, btnBack),
+			menu.Row(btnScan3, btnScan4),
 		)
 
 		abot.Handle("/menu", func(c telebot.Context) error {
@@ -91,6 +92,11 @@ to quickly create a Cobra application.`,
 			return startScan(c, "192.168.0.3", "")
 		})
 
+		abot.Handle(&btnScan4, func(c telebot.Context) error {
+			//return c.Send("/scan 192.168.0.2")
+			return startScan(c, "192.168.0.4", "sU")
+		})		
+		
 		abot.Handle(&btnBack, func(c telebot.Context) error {
 			return c.Send("You can type your commands.")
 		})
@@ -219,6 +225,9 @@ func performScan(ipRange, flag string) string {
 		cmd = exec.Command("nmap", "--open -p- ", ipRange, "-sV", "-oX", "current_scan.xml")
 	case "":
 		cmd = exec.Command("nmap", "-sn", ipRange, "-oX", "current_scan.xml")
+	case "sU":
+		cmd = exec.Command("nmap", ipRange, "-sU", "-oX", "current_scan.xml")
+		
 	default:
 		return "Invalid flag. Use 'Pn', 'sV' or leave it empty."
 	}
